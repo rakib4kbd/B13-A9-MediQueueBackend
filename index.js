@@ -1,6 +1,5 @@
 const express = require("express");
 const cors = require("cors");
-const { json } = require("express/lib/response");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const dotenv = require("dotenv");
 const { ObjectId } = require("mongodb");
@@ -40,21 +39,77 @@ async function run() {
 
     app.get("/tutors", async (req, res) => {
       const tutors = database.collection("tutor");
+      const query = {};
 
-      const queryLimit = req.query.limit;
-      if (queryLimit) {
-        const result = await tutors.find().limit(Number(queryLimit)).toArray();
+      // Get query parameters
+      const queryLimit = req.query.limit ? Number(req.query.limit) : 0;
+      const querySearch = req.query.search?.trim() || "";
+      const queryRegistrationStart = req.query.registrationStart || "";
+      const queryRegistrationEnd = req.query.registrationEnd || "";
+      const userId = req.query.userId;
+
+      if (userId) {
+        const result = await tutors
+          .find({ "addedBy.userId": userId })
+          .toArray();
         return res.send(result);
       }
-      const result = await tutors.find().toArray();
+
+      const queryItems = [];
+
+      if (querySearch) {
+        queryItems.push({
+          tutorName: { $regex: querySearch, $options: "i" },
+        });
+      }
+
+      if (queryRegistrationStart && queryRegistrationEnd) {
+        queryItems.push({
+          $and: [
+            {
+              sessionStartDate: {
+                $gte: new Date(queryRegistrationStart).toISOString(),
+              },
+            },
+            {
+              sessionStartDate: {
+                $lte: new Date(queryRegistrationEnd).toISOString(),
+              },
+            },
+          ],
+        });
+      } else if (queryRegistrationStart) {
+        queryItems.push({
+          sessionStartDate: {
+            $gte: new Date(queryRegistrationStart).toISOString(),
+          },
+        });
+      } else if (queryRegistrationEnd) {
+        queryItems.push({
+          sessionStartDate: {
+            $lte: new Date(queryRegistrationEnd).toISOString(),
+          },
+        });
+      }
+
+      if (queryItems.length > 0) {
+        query.$and = queryItems;
+      }
+
+      let result;
+      if (queryLimit > 0) {
+        result = await tutors.find(query).limit(queryLimit).toArray();
+      } else {
+        result = await tutors.find(query).toArray();
+      }
+
       return res.send(result);
     });
 
     app.get("/tutor/:id", async (req, res) => {
       const tutorById = database.collection("tutor");
-      const result = await tutorById.findOne({
-        _id: new ObjectId(req.params.id),
-      });
+      const query = { _id: new ObjectId(req.params.id) };
+      const result = await tutorById.findOne(query);
       return res.send(result);
     });
 
@@ -73,7 +128,6 @@ async function run() {
     });
 
     app.post("/booking", async (req, res) => {
-      console.log(req.body);
       const payload = {
         ...req.body,
         bookingDate: new Date(),
@@ -103,6 +157,45 @@ async function run() {
           { $inc: { totalSlot: -1 } },
         );
       }
+      return res.send(result);
+    });
+
+    app.delete("/booking/:id", async (req, res) => {
+      const bookingId = req.params.id;
+      const bookingCollection = database.collection("booking");
+      const booking = await bookingCollection.findOne({
+        _id: new ObjectId(bookingId),
+      });
+      if (!booking) {
+        return res.status(404).send({ message: "Booking not found" });
+      }
+      const result = await bookingCollection.deleteOne({
+        _id: new ObjectId(bookingId),
+      });
+      if (result.acknowledged) {
+        const tutorCollection = database.collection("tutor");
+        await tutorCollection.updateOne(
+          { _id: new ObjectId(booking.tutorId) },
+          { $inc: { totalSlot: 1 } },
+        );
+      }
+      return res.send(result);
+    });
+
+    app.patch("/booking/:id", async (req, res) => {
+      const bookingId = req.params.id;
+      const { status } = req.body;
+      const bookingCollection = database.collection("booking");
+      const booking = await bookingCollection.findOne({
+        _id: new ObjectId(bookingId),
+      });
+      if (!booking) {
+        return res.status(404).send({ message: "Booking not found" });
+      }
+      const result = await bookingCollection.updateOne(
+        { _id: new ObjectId(bookingId) },
+        { $set: { status } },
+      );
       return res.send(result);
     });
 
