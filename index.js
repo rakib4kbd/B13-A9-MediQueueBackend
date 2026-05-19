@@ -55,16 +55,55 @@ async function run() {
       const result = await tutorById.findOne({
         _id: new ObjectId(req.params.id),
       });
-      console.log(result);
       return res.send(result);
     });
 
-    app.post("/add-tutor", (req, res) => {
+    app.post("/tutor", async (req, res) => {
+      const tutorCollection = database.collection("tutor");
+      const result = await tutorCollection.insertOne(req.body);
+      return res.send(result);
+    });
+
+    // Booking API
+    app.get("/booking/:id", async (req, res) => {
+      const userId = req.params.id;
+      const bookingCollection = database.collection("booking");
+      const result = await bookingCollection.find({ userId }).toArray();
+      return res.send(result);
+    });
+
+    app.post("/booking", async (req, res) => {
       console.log(req.body);
-      res.status(201).json({
-        message: "User created successfully",
-        data: req.body,
+      const payload = {
+        ...req.body,
+        bookingDate: new Date(),
+        status: "pending",
+      };
+      const tutorCollection = database.collection("tutor");
+      const tutor = await tutorCollection.findOne({
+        _id: new ObjectId(payload.tutorId),
       });
+      if (tutor.totalSlot <= 0) {
+        return res.status(400).send({
+          message:
+            "This session is fully booked. You can't join at the moment.",
+        });
+      }
+      if (new Date(tutor.sessionStartDate) > new Date()) {
+        return res
+          .status(400)
+          .send({ message: "Session has not started yet." });
+      }
+      const bookingCollection = database.collection("booking");
+      const result = await bookingCollection.insertOne(payload);
+      if (result.acknowledged) {
+        const tutorCollection = database.collection("tutor");
+        await tutorCollection.updateOne(
+          { _id: new ObjectId(payload.tutorId) },
+          { $inc: { totalSlot: -1 } },
+        );
+      }
+      return res.send(result);
     });
 
     app.listen(port, () => {
