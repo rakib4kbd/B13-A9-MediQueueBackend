@@ -3,6 +3,7 @@ const cors = require("cors");
 const { json } = require("express/lib/response");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const dotenv = require("dotenv");
+const { ObjectId } = require("mongodb");
 dotenv.config();
 const dbUri = process.env.MONGODB_URL;
 
@@ -27,6 +28,8 @@ async function run() {
       "Pinged your deployment. You successfully connected to MongoDB!",
     );
 
+    const database = client.db("mediqueue");
+
     // app.use(cors);
     app.use(express.json());
     app.use(cors());
@@ -36,10 +39,24 @@ async function run() {
     });
 
     app.get("/tutors", async (req, res) => {
-      const database = client.db("mediqueue");
       const tutors = database.collection("tutor");
+
+      const queryLimit = req.query.limit;
+      if (queryLimit) {
+        const result = await tutors.find().limit(Number(queryLimit)).toArray();
+        return res.send(result);
+      }
       const result = await tutors.find().toArray();
-      res.send(result);
+      return res.send(result);
+    });
+
+    app.get("/tutor/:id", async (req, res) => {
+      const tutorById = database.collection("tutor");
+      const result = await tutorById.findOne({
+        _id: new ObjectId(req.params.id),
+      });
+      console.log(result);
+      return res.send(result);
     });
 
     app.post("/add-tutor", (req, res) => {
