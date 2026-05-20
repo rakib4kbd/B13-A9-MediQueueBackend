@@ -35,7 +35,6 @@ const verifyToken = async (req, res, next) => {
 
   try {
     const { payload } = await jwtVerify(token, JWKS);
-    // console.log(payload);
     next();
   } catch (error) {
     return res.status(403).json({ message: "Forbidden" });
@@ -285,6 +284,16 @@ async function run() {
         { $set: { status } },
       );
       return res.send(result);
+    });
+
+    app.get("/check-email/:email", async (req, res) => {
+      const email = req.params.email;
+      const userCollection = await database.collection("user");
+      const user = await userCollection.findOne({ email: email });
+      if (user) {
+        return res.send({ message: "User Exists" });
+      }
+      return res.status(404).send({ message: "Not Found" });
     });
 
     app.listen(port, () => {
