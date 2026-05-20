@@ -144,6 +144,66 @@ async function run() {
       return res.send(result);
     });
 
+    app.delete("/tutor/:id", verifyToken, async (req, res) => {
+      const tutorId = req.params.id;
+      const tutorCollection = database.collection("tutor");
+      const tutor = await tutorCollection.findOne({
+        _id: new ObjectId(tutorId),
+      });
+      if (!tutor) {
+        return res.status(404).send({ message: "Booking not found" });
+      }
+      const result = await tutorCollection.deleteOne({
+        _id: new ObjectId(tutorId),
+      });
+      return res.send(result);
+    });
+
+    app.patch("/tutor/:id", verifyToken, async (req, res) => {
+      const tutorId = req.params.id;
+      const data = req.body;
+      const tutorCollection = database.collection("tutor");
+      const tutor = await tutorCollection.findOne({
+        _id: new ObjectId(tutorId),
+      });
+      if (!tutor) {
+        return res.status(404).send({ message: "Booking not found" });
+      }
+      const result = await tutorCollection.updateOne(
+        { _id: new ObjectId(tutorId) },
+        {
+          $set: {
+            tutorName: data.tutorName,
+            photo: data.photo,
+            subject: data.subject,
+
+            hourlyFee: data.hourlyFee,
+            totalSlot: data.totalSlot,
+
+            sessionStartDate: data.sessionStartDate,
+
+            availability: {
+              day: data.availability?.day,
+              time: data.availability?.time,
+            },
+
+            institution: {
+              name: data.institution?.name,
+              experience: data.institution?.experience,
+            },
+
+            location: {
+              area: data.location?.area,
+              city: data.location?.city,
+              teachingMode: data.location?.teachingMode,
+            },
+          },
+        },
+      );
+
+      return res.send(result);
+    });
+
     // Booking API
     app.get("/booking/:id", verifyToken, async (req, res) => {
       const userId = req.params.id;
