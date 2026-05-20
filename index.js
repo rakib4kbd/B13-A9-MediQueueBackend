@@ -148,7 +148,10 @@ async function run() {
     app.get("/booking/:id", verifyToken, async (req, res) => {
       const userId = req.params.id;
       const bookingCollection = database.collection("booking");
-      const result = await bookingCollection.find({ userId }).toArray();
+      const result = await bookingCollection
+        .find({ userId })
+        .sort({ _id: -1 })
+        .toArray();
       return res.send(result);
     });
 
