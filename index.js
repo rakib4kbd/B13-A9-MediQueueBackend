@@ -3,6 +3,8 @@ const cors = require("cors");
 const { MongoClient, ServerApiVersion } = require("mongodb");
 const dotenv = require("dotenv");
 const { ObjectId } = require("mongodb");
+const { createRemoteJWKSet, jwtVerify } = require("jose-cjs");
+
 dotenv.config();
 const dbUri = process.env.MONGODB_URL;
 
@@ -16,6 +18,29 @@ const client = new MongoClient(dbUri, {
     deprecationErrors: true,
   },
 });
+
+const JWKS = createRemoteJWKSet(
+  new URL(`${process.env.FRONTEND_URL}/api/auth/jwks`),
+);
+
+const verifyToken = async (req, res, next) => {
+  const authHeader = req?.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+  const token = authHeader.split(" ")[1];
+  if (!token) {
+    return res.status(401).json({ message: "Unauthorized" });
+  }
+
+  try {
+    const { payload } = await jwtVerify(token, JWKS);
+    // console.log(payload);
+    next();
+  } catch (error) {
+    return res.status(403).json({ message: "Forbidden" });
+  }
+};
 
 async function run() {
   try {
@@ -106,28 +131,28 @@ async function run() {
       return res.send(result);
     });
 
-    app.get("/tutor/:id", async (req, res) => {
+    app.get("/tutor/:id", verifyToken, async (req, res) => {
       const tutorById = database.collection("tutor");
       const query = { _id: new ObjectId(req.params.id) };
       const result = await tutorById.findOne(query);
       return res.send(result);
     });
 
-    app.post("/tutor", async (req, res) => {
+    app.post("/tutor", verifyToken, async (req, res) => {
       const tutorCollection = database.collection("tutor");
       const result = await tutorCollection.insertOne(req.body);
       return res.send(result);
     });
 
     // Booking API
-    app.get("/booking/:id", async (req, res) => {
+    app.get("/booking/:id", verifyToken, async (req, res) => {
       const userId = req.params.id;
       const bookingCollection = database.collection("booking");
       const result = await bookingCollection.find({ userId }).toArray();
       return res.send(result);
     });
 
-    app.post("/booking", async (req, res) => {
+    app.post("/booking", verifyToken, async (req, res) => {
       const payload = {
         ...req.body,
         bookingDate: new Date(),
@@ -160,7 +185,7 @@ async function run() {
       return res.send(result);
     });
 
-    app.delete("/booking/:id", async (req, res) => {
+    app.delete("/booking/:id", verifyToken, async (req, res) => {
       const bookingId = req.params.id;
       const bookingCollection = database.collection("booking");
       const booking = await bookingCollection.findOne({
@@ -182,7 +207,7 @@ async function run() {
       return res.send(result);
     });
 
-    app.patch("/booking/:id", async (req, res) => {
+    app.patch("/booking/:id", verifyToken, async (req, res) => {
       const bookingId = req.params.id;
       const { status } = req.body;
       const bookingCollection = database.collection("booking");

@@ -23,6 +23,9 @@ importers:
       express:
         specifier: ~4.16.1
         version: 4.16.4
+      jose-cjs:
+        specifier: ^6.2.3
+        version: 6.2.3
       mongodb:
         specifier: ^7.2.0
         version: 7.2.0
@@ -226,6 +229,9 @@ packages:
   is-number@7.0.0:
     resolution: {integrity: sha512-41Cifkg6e8TylSpdtTpeLVMqvSBEVzTttHvERD741+pnZ8ANv0004MRL43QKPDlK9cGvNp6NZWZUBlbGXYxxng==}
     engines: {node: '>=0.12.0'}
+
+  jose-cjs@6.2.3:
+    resolution: {integrity: sha512-z8RXqTsmY84Lk2Ypx4GiextolR4KuTiVJIYFNJrcp3n79wTO5ncMAi9dcYTGGmTM/Z4CpU4TGb0K+zFyLTtKAw==}
 
   media-typer@0.3.0:
     resolution: {integrity: sha512-dq+qelQ9akHpcOl/gUVRTxVIOkAJ1wR3QAvb4RsVjS8oVoFjDGTc679wJYmUmknUF5HwMLOgb5O+a3KxfWapPQ==}
@@ -648,6 +654,8 @@ snapshots:
       is-extglob: 2.1.1
 
   is-number@7.0.0: {}
+
+  jose-cjs@6.2.3: {}
 
   media-typer@0.3.0: {}
 
