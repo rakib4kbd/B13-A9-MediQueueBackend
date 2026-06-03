@@ -58,7 +58,10 @@ async function run() {
     app.use(cors());
 
     app.get("/", (req, res) => {
-      res.send({ message: "hello world" });
+      res.send({
+        message:
+          "MediQueue Backend is an Express.js API for handling user authentication, tutor listings, and booking workflows. It is built to support a modern React/Next.js client and connects to MongoDB for data storage.",
+      });
     });
 
     app.get("/tutors", async (req, res) => {

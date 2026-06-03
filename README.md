@@ -2,7 +2,8 @@
 
 This backend powers the MediQueue tutoring platform and serves the API for the client application.
 
-**Live site:** https://b13-a9-medi-queue-frotend.vercel.app/
+**Live Frotend:** https://b13-a9-medi-queue-frotend.vercel.app/  
+**Live Backend:** https://b13-a9-medi-queue-backend.vercel.app/
 
 ## About
 
